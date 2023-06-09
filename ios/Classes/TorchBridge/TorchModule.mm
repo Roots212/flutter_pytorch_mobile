@@ -54,11 +54,14 @@
 - (NSArray<NSNumber*>*)detectObject:(void*)imageBuffer withWidth:(int)width andHeight:(int)height {
     try {
         at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
-        torch::autograd::AutoGradMode guard(true);
-       
+        c10::InferenceMode guard;
+       CFTimeInterval startTime = CACurrentMediaTime();
                         NSLog(@"Loaded");
 
-        at::Tensor outputTensor = _module.forward({tensor}).toTensor();
+       auto outputTuple = _module.forward({tensor}).toTuple();
+CFTimeInterval elapsedTime = CACurrentMediaTime() - startTime;
+        NSLog(@"inference time:%f", elapsedTime);
+        auto outputTensor = outputTuple->elements()[0].toTensor();
 
         float *floatBuffer = outputTensor.data_ptr<float>();
         if(!floatBuffer){
