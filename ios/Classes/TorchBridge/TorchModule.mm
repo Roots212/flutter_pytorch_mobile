@@ -55,10 +55,10 @@
     try {
         at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
         torch::autograd::AutoGradMode guard(true);
-        at::AutoNonVariableTypeMode non_var_type_mode(false);
-        
+       
+                        NSLog(@"Loaded");
+
         at::Tensor outputTensor = _module.forward({tensor}).toTensor();
-                NSLog(@"Loaded");
 
         float *floatBuffer = outputTensor.data_ptr<float>();
         if(!floatBuffer){
