@@ -25,8 +25,8 @@
 - (NSArray<NSNumber*>*)predictImage:(void*)imageBuffer withWidth:(int)width andHeight:(int)height {
     try {
         at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
-        torch::autograd::AutoGradMode guard(false);
-        at::AutoNonVariableTypeMode non_var_type_mode(true);
+        torch::autograd::AutoGradMode guard(true);
+        at::AutoNonVariableTypeMode non_var_type_mode(false);
         
         at::Tensor outputTensor = _module.forward({tensor}).toTensor();
         
