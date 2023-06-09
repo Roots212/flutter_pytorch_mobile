@@ -58,7 +58,7 @@
         at::AutoNonVariableTypeMode non_var_type_mode(false);
         
         at::Tensor outputTensor = _module.forward({tensor}).toTensor();
-        NSLog()
+        NSLog("loaded")
         float *floatBuffer = outputTensor.data_ptr<float>();
         if(!floatBuffer){
             return nil;
