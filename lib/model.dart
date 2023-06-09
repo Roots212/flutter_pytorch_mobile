@@ -54,7 +54,39 @@ class Model {
     }
     return labels[maxScoreIndex];
   }
+  Future<String> getObjectDetection(
+      File image, int width, int height, String labelPath,
+      {List<double> mean = TORCHVISION_NORM_MEAN_RGB,
+      List<double> std = TORCHVISION_NORM_STD_RGB}) async {
+    // Assert mean std
+    assert(mean.length == 3, "mean should have size of 3");
+    assert(std.length == 3, "std should have size of 3");
 
+    List<String> labels = await _getLabels(labelPath);
+    List byteArray = image.readAsBytesSync();
+    final List? prediction = await _channel.invokeListMethod("detectObject", {
+      "index": _index,
+      "image": byteArray,
+      "width": width,
+      "height": height,
+      "mean": mean,
+      "std": std
+    });
+    double maxScore = double.negativeInfinity;
+    int maxScoreIndex = -1;
+    if(prediction!=null){
+      for (int i = 0; i < prediction.length; i++) {
+        if (prediction[i] > maxScore) {
+          maxScore = prediction[i];
+          maxScoreIndex = i;
+        }
+    }
+     return labels[maxScoreIndex];
+    }
+   else{
+    return "Error";
+   }
+  }
   ///predicts image but returns the raw net output
   Future<List?> getImagePredictionList(File image, int width, int height,
       {List<double> mean = TORCHVISION_NORM_MEAN_RGB,

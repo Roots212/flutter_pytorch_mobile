@@ -51,7 +51,44 @@
     }
     return nil;
 }
-
+- (NSArray<NSNumber*>*)detectObject:(void*)imageBuffer withWidth:(int)width andHeight:(int)height {
+    try {
+        at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
+        torch::autograd::AutoGradMode guard(false);
+        at::AutoNonVariableTypeMode non_var_type_mode(true);
+        
+        at::Tensor outputTensor = _module.forward({tensor}).toTensor();
+        
+        float *floatBuffer = outputTensor.data_ptr<float>();
+        if(!floatBuffer){
+            return nil;
+        }
+        
+         int numObjects = outputTensor.size(0); // Assuming output is a tensor of shape (N, 5) for bounding box detection
+        
+        NSMutableArray<NSDictionary*>* results = [[NSMutableArray<NSDictionary*> alloc] init];
+        for (int i = 0; i < numObjects; i++) {
+            float x = floatBuffer[i * 5];
+            float y = floatBuffer[i * 5 + 1];
+            float w = floatBuffer[i * 5 + 2];
+            float h = floatBuffer[i * 5 + 3];
+            float confidence = floatBuffer[i * 5 + 4];
+            
+            NSDictionary* objectDict = @{
+                @"x": @(x),
+                @"y": @(y),
+                @"width": @(w),
+                @"height": @(h),
+                @"confidence": @(confidence)
+            };
+            
+            [results addObject:objectDict];
+        }
+    } catch (const std::exception& e) {
+        NSLog(@"%s", e.what());
+    }
+    return nil;
+}
 - (NSArray<NSNumber*>*)predict:(void*)data withShape:(NSArray<NSNumber*>*)shape andDtype:(NSString*)dtype {
     std::vector<int64_t> shapeVec;    
     for(int i = 0; i < [shape count]; i++){
