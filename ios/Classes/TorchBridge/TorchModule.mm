@@ -54,11 +54,11 @@
 - (NSArray<NSNumber*>*)detectObject:(void*)imageBuffer withWidth:(int)width andHeight:(int)height {
     try {
         at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
-        torch::autograd::AutoGradMode guard(false);
-        at::AutoNonVariableTypeMode non_var_type_mode(true);
+        torch::autograd::AutoGradMode guard(true);
+        at::AutoNonVariableTypeMode non_var_type_mode(false);
         
         at::Tensor outputTensor = _module.forward({tensor}).toTensor();
-        
+        NSLog()
         float *floatBuffer = outputTensor.data_ptr<float>();
         if(!floatBuffer){
             return nil;
@@ -68,18 +68,22 @@
         
         NSMutableArray<NSDictionary*>* results = [[NSMutableArray<NSDictionary*> alloc] init];
         for (int i = 0; i < numObjects; i++) {
-            float x = floatBuffer[i * 5];
-            float y = floatBuffer[i * 5 + 1];
-            float w = floatBuffer[i * 5 + 2];
-            float h = floatBuffer[i * 5 + 3];
-            float confidence = floatBuffer[i * 5 + 4];
+            float x = floatBuffer[i * 7];
+            float y = floatBuffer[i * 7 + 1];
+            float w = floatBuffer[i * 7 + 2];
+            float h = floatBuffer[i * 7 + 3];
+            float confidence = floatBuffer[i * 7 + 4];
+              float additionalValue1 = floatBuffer[i * 7 + 5];
+            float additionalValue2 = floatBuffer[i * 7 + 6];
             
             NSDictionary* objectDict = @{
                 @"x": @(x),
                 @"y": @(y),
                 @"width": @(w),
                 @"height": @(h),
-                @"confidence": @(confidence)
+                @"confidence": @(confidence),
+                  @"additionalValue1": @(additionalValue1),
+                @"additionalValue2": @(additionalValue2)
             };
             
             [results addObject:objectDict];
