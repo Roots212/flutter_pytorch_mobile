@@ -14,6 +14,8 @@
       try {
           _module = torch::jit::load(filePath.UTF8String);
           _module.eval();
+                              NSLog(@"Model Path:  %d",filePath.UTF8String );
+
       } catch (const std::exception& e) {
           NSLog(@"%s", e.what());
           return nil;	
@@ -24,6 +26,7 @@
 
 - (NSArray<NSNumber*>*)predictImage:(void*)imageBuffer withWidth:(int)width andHeight:(int)height {
     try {
+
         at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
         torch::autograd::AutoGradMode guard(false);
         at::AutoNonVariableTypeMode non_var_type_mode(true);
@@ -53,44 +56,49 @@
 }
 - (NSArray<NSNumber*>*)detectObject:(void*)imageBuffer withWidth:(int)width andHeight:(int)height {
     try {
-        at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
-        c10::InferenceMode guard;
-       CFTimeInterval startTime = CACurrentMediaTime();
-                        NSLog(@"Loaded");
+                    NSLog(@"Received image with width: %d and height: %d", width, height);
 
-       auto outputTuple = _module.forward({tensor}).toTuple();
-CFTimeInterval elapsedTime = CACurrentMediaTime() - startTime;
+               at::Tensor tensor = torch::from_blob(imageBuffer, {1, 3, height, width}, at::kFloat);
+
+                c10::InferenceMode guard;
+
+        CFTimeInterval startTime = CACurrentMediaTime();
+
+
+auto outputTensor = _module.forward({tensor}).toTensor();
+        CFTimeInterval elapsedTime = CACurrentMediaTime() - startTime;
         NSLog(@"inference time:%f", elapsedTime);
-        auto outputTensor = outputTuple->elements()[0].toTensor();
+
 
         float *floatBuffer = outputTensor.data_ptr<float>();
         if(!floatBuffer){
             return nil;
         }
         
-         int numObjects = outputTensor.size(0); // Assuming output is a tensor of shape (N, 5) for bounding box detection
+         int numObjects = outputTensor.numel();
         
         NSMutableArray<NSDictionary*>* results = [[NSMutableArray<NSDictionary*> alloc] init];
         for (int i = 0; i < numObjects; i++) {
-            float x = floatBuffer[i * 7];
-            float y = floatBuffer[i * 7 + 1];
-            float w = floatBuffer[i * 7 + 2];
-            float h = floatBuffer[i * 7 + 3];
-            float confidence = floatBuffer[i * 7 + 4];
-              float additionalValue1 = floatBuffer[i * 7 + 5];
-            float additionalValue2 = floatBuffer[i * 7 + 6];
+                NSLog(@"Tensor element at index %d: %f and length: %d", i, floatBuffer[i],i);
+
+            float x = floatBuffer[i * 5];
+            float y = floatBuffer[i * 5 + 1];
+            float w = floatBuffer[i * 5 + 2];
+            float h = floatBuffer[i * 5 + 3];
+            float confidence = floatBuffer[i * 5 + 4];
+              
             
             NSDictionary* objectDict = @{
                 @"x": @(x),
                 @"y": @(y),
                 @"width": @(w),
                 @"height": @(h),
-                @"confidence": @(confidence),
-                  @"additionalValue1": @(additionalValue1),
-                @"additionalValue2": @(additionalValue2)
+                @"confidence": @(confidence)
+                 
             };
             
             [results addObject:objectDict];
+            return [results copy];
         }
     } catch (const std::exception& e) {
         NSLog(@"%s", e.what());

@@ -75,6 +75,7 @@ class Model {
     double maxScore = double.negativeInfinity;
     int maxScoreIndex = -1;
     if(prediction!=null){
+      print(prediction);
       for (int i = 0; i < prediction.length; i++) {
         if (prediction[i] > maxScore) {
           maxScore = prediction[i];
